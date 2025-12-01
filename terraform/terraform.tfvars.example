@@ -1,0 +1,22 @@
+# Stage 1-4: Basic Configuration
+project_name = "cloudzenia-hands-on"
+environment  = "prod"
+aws_region   = "ap-south-1"
+
+# Stage 4: Database Credentials
+db_username = "wp_admin"
+db_password = "RdsPassw0rd!2025"
+
+# Stage 8: Domain and Certificate
+domain_name = "aws-cloudzenia.mooo.com"  # Your FreeDNS domain
+ecs_certificate_arn = ""  # Will add after creating ACM certificate in AWS Console
+
+# Stage 11: ALB for EC2 Instances
+ec2_certificate_arn = ""  # Will add after creating ACM certificate in AWS Console
+
+# Stage 13: GitHub Actions
+# Set to true to enable GitHub Actions IAM role creation
+github_actions_enabled = false
+# Replace with your GitHub repository (format: repo:username/repo-name:*)
+# Example: repo:yourusername/cloudzenia-assignment:*
+github_repository_subject = "repo:YOUR_USERNAME/YOUR_REPO_NAME:*"

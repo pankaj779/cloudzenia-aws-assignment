@@ -1,0 +1,22 @@
+{
+  "name": "cloudzenia-microservice",
+  "version": "1.0.0",
+  "description": "Lightweight Node.js API returning a greeting for the ECS challenge.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "lint": "eslint ."
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.13.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^17.10.2",
+    "eslint-plugin-promise": "^7.1.0"
+  }
+}
+

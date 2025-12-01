@@ -1,0 +1,41 @@
+{
+  "family": "cloudzenia-hands-on-prod-microservice",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::785825525397:role/cloudzenia-hands-on-prod-ecs-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::785825525397:role/cloudzenia-hands-on-prod-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "microservice",
+      "image": "REPLACE_ME_ECR_URI",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "MESSAGE", "value": "Hello from Microservice" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudzenia-hands-on-prod-microservice",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "microservice"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/healthz || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 10
+      }
+    }
+  ]
+}
+
