@@ -49,3 +49,6 @@ env/
 *.temp
 .cache/
 
+# Personal files (not for submission)
+VIDEO_SCRIPT.md
+
