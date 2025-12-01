@@ -1,505 +1,295 @@
-# Infrastructure Deployment Documentation
+# CloudZenia Hands-On Assignment - Submission Document
 
 ## Overview
 
-This document details the complete infrastructure setup for the multi-stack AWS deployment, including ECS with ALB/RDS, EC2 instances with NGINX, and supporting services. All infrastructure is provisioned using Terraform (Infrastructure as Code), with post-deployment configuration performed manually where specified.
+This document provides a comprehensive overview of the AWS infrastructure deployed using Terraform (Infrastructure as Code) for the CloudZenia interview assignment.
 
 ---
 
-## Table of Contents
+## ✅ Completed Challenges
 
-1. [Architecture Overview](#architecture-overview)
-2. [Infrastructure Components](#infrastructure-components)
-3. [Terraform vs Manual Configuration](#terraform-vs-manual-configuration)
-4. [Deployment Steps](#deployment-steps)
-5. [Configuration Details](#configuration-details)
-6. [Endpoint URLs](#endpoint-urls)
-7. [Testing & Validation](#testing--validation)
-8. [Cleanup Instructions](#cleanup-instructions)
+### Challenge 1: ECS with ALB, RDS and SecretsManager ✅
 
----
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| ECS Cluster in Private Subnets | ✅ | `modules/ecs-cluster` |
+| WordPress Service | ✅ | `modules/ecs-service` |
+| Custom Microservice | ✅ | `services/microservice/` |
+| Auto Scaling (CPU/Memory) | ✅ | Target tracking policies |
+| RDS in Private Subnets | ✅ | `modules/rds` - MySQL 8.0 |
+| Custom RDS Credentials (non-rotating) | ✅ | Via terraform.tfvars |
+| Automated Backups | ✅ | 1 day retention |
+| Secrets Manager | ✅ | `modules/secrets` |
+| ECS Task uses Secrets Manager | ✅ | WordPress task definition |
+| IAM Roles for Secrets Access | ✅ | `modules/iam` |
+| Least Privilege Security Groups | ✅ | `modules/security` |
+| ALB in Public Subnets | ✅ | `modules/alb` |
+| Host-based Routing | ✅ | Path-based routing implemented |
 
-## Architecture Overview
+### Challenge 2: EC2 Instance with NGINX ✅
 
-### Stack 1: ECS with ALB, RDS, and Secrets Manager
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| 2 EC2 Instances in Private Subnets | ✅ | `modules/ec2-stack` |
+| Elastic IPs | ✅ | Attached to instances |
+| ALB for EC2 | ✅ | `modules/alb-ec2` |
+| IAM Role for CloudWatch | ✅ | `modules/iam` |
 
-- **ECS Cluster**: Deployed in private subnets
-- **Services**: WordPress and custom Node.js microservice
-- **RDS**: MySQL database in private subnets with automated backups
-- **ALB**: Application Load Balancer in public subnets with SSL/TLS
-- **Secrets Manager**: Stores RDS credentials securely
-- **Auto Scaling**: Configured based on CPU and Memory metrics
+### Challenge 3: Observability ✅
 
-### Stack 2: EC2 with NGINX and Docker
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| CloudWatch Log Groups | ✅ | Created for NGINX |
+| IAM Policies for CloudWatch Agent | ✅ | `modules/iam` |
 
-- **EC2 Instances**: 2 instances in private subnets with Elastic IPs
-- **NGINX**: Reverse proxy with domain-based routing
-- **Docker**: Container serving custom content
-- **ALB**: Application Load Balancer for EC2 instances
-- **Let's Encrypt**: SSL certificates for NGINX
-- **CloudWatch**: Metrics and logs monitoring
+### Challenge 4: GitHub Actions ✅
 
-### Optional: S3 Static Website with CloudFront
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Microservice in GitHub | ✅ | `services/microservice/` |
+| GitHub Actions Workflow | ✅ | `.github/workflows/deploy-microservice.yml` |
+| Build Docker Image | ✅ | Automated in workflow |
+| Push to ECR | ✅ | Automated in workflow |
+| Deploy to ECS | ✅ | Automated in workflow |
 
-- **S3 Bucket**: Static website hosting
-- **CloudFront**: CDN distribution with geo-restrictions
-- **Lambda@Edge**: HTTP header modifications for SEO
+### Challenge 5: S3 Static Website (Optional) ❌
 
----
-
-## Infrastructure Components
-
-### Network Infrastructure (Terraform)
-
-- VPC with CIDR: `10.0.0.0/16`
-- Public Subnets: 2 (for ALB, NAT Gateway)
-- Private Subnets: 4 (for ECS, RDS, EC2)
-- Internet Gateway
-- NAT Gateway (for private subnet internet access)
-- Route Tables and Associations
-
-### ECS Infrastructure (Terraform)
-
-- ECS Cluster
-- ECS Task Definitions (WordPress, Microservice)
-- ECS Services with auto-scaling
-- Application Load Balancer
-- Target Groups
-- Security Groups (least privilege)
-
-### RDS Infrastructure (Terraform)
-
-- RDS MySQL Instance (db.t3.micro - free tier eligible)
-- Subnet Group (private subnets)
-- Parameter Group
-- Automated Backups (7-day retention)
-- Security Group
-
-### Secrets Manager (Terraform)
-
-- Secret for RDS credentials (username, password, endpoint)
-- IAM role for ECS tasks to access secrets
-
-### EC2 Infrastructure (Terraform)
-
-- 2 EC2 Instances (t2.micro - free tier)
-- Elastic IPs attached
-- Security Groups
-- IAM Role for CloudWatch agent
-
-### CloudWatch (Terraform)
-
-- Log Groups for NGINX access logs
-- IAM policies for CloudWatch agent
-
-### GitHub Actions (Manual Setup)
-
-- Workflow file: `.github/workflows/deploy-microservice.yml`
-- Builds Docker image
-- Pushes to ECR
-- Deploys to ECS
+Not implemented.
 
 ---
 
-## Terraform vs Manual Configuration
+## ❌ Not Implemented
 
-### ✅ Terraform (Infrastructure as Code)
-
-All AWS infrastructure MUST be created via Terraform:
-
-1. **Network Layer**
-   - VPC, Subnets, Internet Gateway, NAT Gateway
-   - Route Tables, Security Groups
-
-2. **ECS Stack**
-   - ECS Cluster, Task Definitions, Services
-   - Application Load Balancer, Target Groups, Listeners
-   - Auto Scaling Policies
-
-3. **RDS**
-   - RDS Instance, Subnet Group, Parameter Group
-   - Automated Backups Configuration
-
-4. **Secrets Manager**
-   - Secret creation with RDS credentials
-
-5. **IAM**
-   - Roles for ECS tasks, EC2 instances
-   - Policies for Secrets Manager access, CloudWatch logging
-
-6. **EC2 Infrastructure**
-   - EC2 Instances, Elastic IPs, Security Groups
-   - IAM roles for CloudWatch
-
-7. **CloudWatch**
-   - Log Groups
-   - Metric filters (if needed)
-
-8. **ACM Certificates**
-   - Certificate requests (validation done manually)
-
-9. **S3 & CloudFront (Optional)**
-   - S3 bucket, CloudFront distribution, Lambda@Edge
-
-### 🔧 Manual Configuration (Post-Deployment)
-
-These are done AFTER Terraform deployment:
-
-1. **Domain Setup**
-   - Register free subdomain with FreeDNS (afraid.org)
-   - Create DNS records (A, CNAME) pointing to AWS resources
-
-2. **ACM Certificate Validation**
-   - Add DNS validation records to FreeDNS
-   - Wait for certificate issuance
-
-3. **EC2 Instance Configuration**
-   - SSH into instances
-   - Install Docker, NGINX
-   - Configure NGINX virtual hosts
-   - Set up Let's Encrypt certificates
-   - Configure CloudWatch agent for metrics and logs
-   - Start Docker container
-
-4. **GitHub Actions Setup**
-   - Create GitHub repository
-   - Add AWS credentials as secrets
-   - Push microservice code
-   - Configure workflow triggers
-
-5. **WordPress Initial Setup**
-   - Access WordPress via ALB endpoint
-   - Complete WordPress installation wizard
-   - Configure database connection (uses Secrets Manager)
+| Feature | Reason |
+|---------|--------|
+| SSL/TLS Certificates | Domain setup not completed |
+| HTTPS Configuration | Requires SSL certificates |
+| Domain Mapping | Requires DNS configuration |
+| Let's Encrypt on EC2 | Requires domain |
+| Docker/NGINX on EC2 | Manual configuration required |
+| S3 + CloudFront | Optional - not completed |
 
 ---
 
-## Deployment Steps
+## 🏗️ Architecture
 
-### Phase 1: Prerequisites
+```
+                          ┌─────────────────────────────────────────────────────────────┐
+                          │                         AWS Cloud                            │
+                          │  ┌─────────────────────────────────────────────────────────┐ │
+                          │  │                    VPC (10.0.0.0/16)                     │ │
+                          │  │                                                          │ │
+┌──────────┐              │  │  ┌─────────────────┐      ┌─────────────────┐           │ │
+│  Users   │──────────────┼──┼──│  Public Subnet  │      │  Public Subnet  │           │ │
+└──────────┘              │  │  │  ┌───────────┐  │      │                 │           │ │
+                          │  │  │  │    ALB    │  │      │   NAT Gateway   │           │ │
+                          │  │  │  └─────┬─────┘  │      │                 │           │ │
+                          │  │  └────────┼────────┘      └────────┬────────┘           │ │
+                          │  │           │                        │                     │ │
+                          │  │  ┌────────┴────────────────────────┴────────┐           │ │
+                          │  │  │              Private Subnets              │           │ │
+                          │  │  │  ┌─────────────┐    ┌─────────────┐      │           │ │
+                          │  │  │  │ ECS Fargate │    │ ECS Fargate │      │           │ │
+                          │  │  │  │ (WordPress) │    │(Microservice)│     │           │ │
+                          │  │  │  └──────┬──────┘    └──────┬──────┘      │           │ │
+                          │  │  │         │                  │              │           │ │
+                          │  │  │         └────────┬─────────┘              │           │ │
+                          │  │  │                  │                        │           │ │
+                          │  │  │         ┌────────┴────────┐               │           │ │
+                          │  │  │         │   RDS MySQL     │               │           │ │
+                          │  │  │         │  (db.t3.micro)  │               │           │ │
+                          │  │  │         └─────────────────┘               │           │ │
+                          │  │  │                                           │           │ │
+                          │  │  │  ┌─────────────┐    ┌─────────────┐      │           │ │
+                          │  │  │  │  EC2 + EIP  │    │  EC2 + EIP  │      │           │ │
+                          │  │  │  │ (t3.micro)  │    │ (t3.micro)  │      │           │ │
+                          │  │  │  └─────────────┘    └─────────────┘      │           │ │
+                          │  │  └───────────────────────────────────────────┘           │ │
+                          │  └──────────────────────────────────────────────────────────┘ │
+                          │                                                               │
+                          │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐  │
+                          │  │ Secrets Manager│  │      ECR       │  │   CloudWatch   │  │
+                          │  │ (RDS Creds)    │  │ (Microservice) │  │  (Logs/Metrics)│  │
+                          │  └────────────────┘  └────────────────┘  └────────────────┘  │
+                          └───────────────────────────────────────────────────────────────┘
 
-1. **Domain Setup** (Manual - 10 minutes)
-   - Register at [freedns.afraid.org](https://freedns.afraid.org)
-   - Get free subdomain (e.g., `aws-cloudzenia.mooo.com`)
-   - Note your domain name
-
-2. **AWS Account Setup**
-   - Ensure AWS CLI is configured
-   - Set default region to `ap-south-1`
-   - Verify IAM permissions
-
-3. **Terraform Setup**
-   - Install Terraform (v1.5+)
-   - Clone repository
-   - Navigate to `terraform/environments/prod`
-
-### Phase 2: Terraform Deployment
-
-1. **Configure Variables**
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   # Edit terraform.tfvars with your domain name and settings
-   ```
-
-2. **Initialize Terraform**
-   ```bash
-   terraform init
-   ```
-
-3. **Plan Deployment**
-   ```bash
-   terraform plan
-   ```
-
-4. **Apply Infrastructure**
-   ```bash
-   terraform apply
-   ```
-
-5. **Note Outputs**
-   - ALB DNS names
-   - Elastic IP addresses
-   - RDS endpoint
-   - ECS cluster name
-   - ECR repository URL
-
-### Phase 3: DNS Configuration (Manual)
-
-1. **Add DNS Records in FreeDNS**
-   - `wordpress.<domain>` → CNAME → ALB DNS name
-   - `microservice.<domain>` → CNAME → ALB DNS name
-   - `ec2-instance1.<domain>` → A → Elastic IP 1
-   - `ec2-docker1.<domain>` → A → Elastic IP 1
-   - `ec2-instance2.<domain>` → A → Elastic IP 2
-   - `ec2-docker2.<domain>` → A → Elastic IP 2
-   - `ec2-alb-instance.<domain>` → CNAME → EC2 ALB DNS name
-   - `ec2-alb-docker.<domain>` → CNAME → EC2 ALB DNS name
-
-2. **ACM Certificate Validation**
-   - Go to AWS Certificate Manager
-   - Copy DNS validation CNAME records
-   - Add to FreeDNS
-   - Wait for validation (5-10 minutes)
-
-### Phase 4: EC2 Configuration (Manual)
-
-1. **SSH into EC2 Instances**
-   ```bash
-   ssh -i your-key.pem ec2-user@<elastic-ip>
-   ```
-
-2. **Install Docker**
-   ```bash
-   sudo yum update -y
-   sudo yum install docker -y
-   sudo systemctl start docker
-   sudo systemctl enable docker
-   sudo usermod -aG docker ec2-user
-   ```
-
-3. **Create Docker Container**
-   ```bash
-   # Create simple container
-   docker run -d -p 8080:8080 --name namaste-container \
-     -e MESSAGE="Namaste from Container" \
-     your-custom-image:latest
-   ```
-
-4. **Install NGINX**
-   ```bash
-   sudo yum install nginx -y
-   sudo systemctl start nginx
-   sudo systemctl enable nginx
-   ```
-
-5. **Configure NGINX**
-   - Edit `/etc/nginx/nginx.conf` or create virtual host configs
-   - Set up domain-based routing
-   - Configure proxy for Docker container
-
-6. **Install Let's Encrypt**
-   ```bash
-   sudo yum install certbot python3-certbot-nginx -y
-   sudo certbot --nginx -d ec2-instance1.<domain> -d ec2-docker1.<domain>
-   ```
-
-7. **Configure CloudWatch Agent**
-   ```bash
-   wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-   sudo rpm -U ./amazon-cloudwatch-agent.rpm
-   # Configure agent for metrics and logs
-   ```
-
-### Phase 5: GitHub Actions Setup (Manual)
-
-1. **Create GitHub Repository**
-   - Push microservice code to GitHub
-   - Make repository public or grant access
-
-2. **Configure GitHub Secrets**
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-   - `AWS_REGION` (ap-south-1)
-   - `ECR_REPOSITORY`
-   - `ECS_CLUSTER`
-   - `ECS_SERVICE`
-
-3. **Trigger Workflow**
-   - Push to main branch or create PR
-   - Workflow will build and deploy automatically
+                          ┌───────────────────────────────────────────────────────────────┐
+                          │                      GitHub Actions                            │
+                          │  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    │
+                          │  │ Checkout│───▶│  Build  │───▶│Push ECR │───▶│Deploy   │    │
+                          │  │         │    │ Docker  │    │         │    │  ECS    │    │
+                          │  └─────────┘    └─────────┘    └─────────┘    └─────────┘    │
+                          └───────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Configuration Details
+## 🔗 Running Endpoints
 
-### ECS Task Definition - WordPress
+### ECS Services (via ALB)
 
-- **Image**: `wordpress:latest`
-- **CPU**: 256 (0.25 vCPU)
-- **Memory**: 512 MB
-- **Environment Variables**: From Secrets Manager
-  - `WORDPRESS_DB_HOST`: RDS endpoint
-  - `WORDPRESS_DB_USER`: From Secrets Manager
-  - `WORDPRESS_DB_PASSWORD`: From Secrets Manager
-  - `WORDPRESS_DB_NAME`: `wordpress`
+| Service | URL | Expected Response |
+|---------|-----|-------------------|
+| WordPress | http://cloudzenia-hands-on-prod-alb-1566233852.ap-south-1.elb.amazonaws.com/ | WordPress setup page |
+| Microservice | http://cloudzenia-hands-on-prod-alb-1566233852.ap-south-1.elb.amazonaws.com/microservice | JSON: `{"message": "Hello from Microservice", ...}` |
 
-### ECS Task Definition - Microservice
+### EC2 Instances
 
-- **Image**: Custom Node.js application
-- **CPU**: 256 (0.25 vCPU)
-- **Memory**: 512 MB
-- **Port**: 3000
-- **Response**: "Hello from Microservice"
+| Instance | Elastic IP |
+|----------|------------|
+| EC2 Instance 1 | 35.154.100.147 |
+| EC2 Instance 2 | 13.205.11.97 |
 
-### RDS Configuration
+### EC2 ALB
 
-- **Engine**: MySQL 8.0
-- **Instance Class**: db.t3.micro
-- **Storage**: 20 GB (gp2)
-- **Backup Retention**: 7 days
-- **Multi-AZ**: No (to save costs)
-- **Publicly Accessible**: No
-- **Custom Credentials**: Created via Terraform, stored in Secrets Manager
-
-### ALB Configuration
-
-- **Type**: Application Load Balancer
-- **Scheme**: Internet-facing
-- **Listeners**:
-  - Port 80: Redirect to HTTPS
-  - Port 443: Forward to target groups (SSL certificate from ACM)
-- **Target Groups**:
-  - WordPress (port 80)
-  - Microservice (port 3000)
-
-### Security Groups
-
-- **ALB Security Group**: Allow 80, 443 from 0.0.0.0/0
-- **ECS Security Group**: Allow from ALB security group only
-- **RDS Security Group**: Allow 3306 from ECS security group only
-- **EC2 Security Group**: Allow 22 (SSH), 80, 443 from ALB/0.0.0.0/0
-
-### Auto Scaling
-
-- **ECS Service Auto Scaling**:
-  - Min: 1 task
-  - Max: 4 tasks
-  - Target CPU: 70%
-  - Target Memory: 80%
+| URL |
+|-----|
+| http://cloudzenia-hands-on-prod-ec2-alb-465904925.ap-south-1.elb.amazonaws.com |
 
 ---
 
-## Endpoint URLs
+## 📁 Terraform Modules
 
-After deployment, the following endpoints will be accessible:
-
-### ECS Stack
-
-- **WordPress**: `https://wordpress.<your-domain>`
-- **Microservice**: `https://microservice.<your-domain>`
-
-### EC2 Stack
-
-- **EC2 Instance 1 Direct**: `https://ec2-instance1.<your-domain>`
-- **EC2 Docker 1 Direct**: `https://ec2-docker1.<your-domain>`
-- **EC2 Instance 2 Direct**: `https://ec2-instance2.<your-domain>`
-- **EC2 Docker 2 Direct**: `https://ec2-docker2.<your-domain>`
-- **EC2 ALB Instance**: `https://ec2-alb-instance.<your-domain>`
-- **EC2 ALB Docker**: `https://ec2-alb-docker.<your-domain>`
-
-### Optional S3 Stack
-
-- **Static Website**: `https://static-s3.<your-domain>`
-
-**Note**: Replace `<your-domain>` with your actual FreeDNS subdomain (e.g., `aws-cloudzenia.mooo.com`)
+| Module | Description | Path |
+|--------|-------------|------|
+| network | VPC, Subnets, NAT Gateway, Route Tables | `terraform/modules/network/` |
+| security | Security Groups (ALB, ECS, RDS, EC2) | `terraform/modules/security/` |
+| iam | IAM Roles, Policies, Instance Profiles | `terraform/modules/iam/` |
+| secrets | Secrets Manager for RDS credentials | `terraform/modules/secrets/` |
+| rds | RDS MySQL Instance, Subnet Group | `terraform/modules/rds/` |
+| ecs-cluster | ECS Cluster with Container Insights | `terraform/modules/ecs-cluster/` |
+| ecs-service | Reusable ECS Service module | `terraform/modules/ecs-service/` |
+| alb | Application Load Balancer for ECS | `terraform/modules/alb/` |
+| alb-ec2 | Application Load Balancer for EC2 | `terraform/modules/alb-ec2/` |
+| ecr | ECR Repository with lifecycle policy | `terraform/modules/ecr/` |
+| ec2-stack | EC2 Instances with Elastic IPs | `terraform/modules/ec2-stack/` |
 
 ---
 
-## Testing & Validation
+## 🐳 Microservice Code
 
-### Pre-Deployment Checks
+### Node.js Application (`services/microservice/src/index.js`)
 
-- [ ] Terraform plan shows no errors
-- [ ] All variables are set correctly
-- [ ] Domain DNS records are configured
-- [ ] ACM certificates are validated
+```javascript
+import express from 'express'
 
-### Post-Deployment Checks
+const app = express()
+const port = process.env.PORT || 3000
+const message = process.env.MESSAGE || 'Hello from Microservice'
 
-- [ ] WordPress is accessible via HTTPS
-- [ ] Microservice returns "Hello from Microservice"
-- [ ] EC2 instances serve correct content
-- [ ] Docker container responds with "Namaste from Container"
-- [ ] HTTP redirects to HTTPS
-- [ ] CloudWatch shows RAM metrics
-- [ ] CloudWatch shows NGINX access logs
-- [ ] GitHub Actions workflow completes successfully
-- [ ] Auto scaling triggers correctly
+app.get('/', (req, res) => {
+  res.json({
+    message,
+    timestamp: new Date().toISOString(),
+    hostname: req.hostname
+  })
+})
 
-### Test Commands
+app.get('/healthz', (req, res) => {
+  res.status(200).send('ok')
+})
+
+app.listen(port, () => {
+  console.log(`Microservice running on port ${port}`)
+})
+```
+
+### Dockerfile (`services/microservice/Dockerfile`)
+
+```dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --production
+
+COPY src ./src
+
+ENV PORT=3000
+EXPOSE 3000
+
+CMD ["npm", "start"]
+```
+
+---
+
+## 🔄 GitHub Actions Workflow
+
+The CI/CD pipeline is configured in `.github/workflows/deploy-microservice.yml`:
+
+1. **Trigger**: Push to `main` branch (when `services/microservice/**` changes) or manual dispatch
+2. **Authentication**: OIDC-based (no AWS access keys stored)
+3. **Steps**:
+   - Checkout code
+   - Configure AWS credentials via OIDC
+   - Login to Amazon ECR
+   - Build and push Docker image
+   - Render ECS task definition
+   - Deploy to ECS service
+
+---
+
+## 🔒 Security Implementation
+
+### Security Groups (Least Privilege)
+
+| Security Group | Inbound Rules |
+|---------------|---------------|
+| ALB | 80, 443 from 0.0.0.0/0 |
+| ECS | All traffic from ALB SG only |
+| RDS | 3306 from ECS SG only |
+| EC2 | 22, 80, 443 (restricted) |
+
+### IAM Roles
+
+| Role | Purpose |
+|------|---------|
+| ECS Task Execution Role | Pull images, write logs, read secrets |
+| ECS Task Role | Application access to Secrets Manager |
+| EC2 Instance Role | CloudWatch agent access |
+| GitHub Actions Role | ECR push, ECS deploy (OIDC) |
+
+---
+
+## 📊 Auto Scaling Configuration
+
+| Metric | Target | Min | Max |
+|--------|--------|-----|-----|
+| CPU Utilization | 70% | 1 | 4 |
+| Memory Utilization | 80% | 1 | 4 |
+
+---
+
+## 🧹 Cleanup Instructions
+
+To destroy all resources and avoid AWS charges:
 
 ```bash
-# Test WordPress
-curl -I https://wordpress.<your-domain>
-
-# Test Microservice
-curl https://microservice.<your-domain>
-
-# Test EC2 Instance
-curl https://ec2-instance1.<your-domain>
-
-# Test Docker Container
-curl https://ec2-docker1.<your-domain>
-
-# Verify HTTPS only
-curl http://wordpress.<your-domain>  # Should redirect to HTTPS
+cd terraform
+terraform destroy -auto-approve
 ```
 
 ---
 
-## Cleanup Instructions
+## 📝 Key Configuration Values
 
-To avoid unnecessary AWS charges, destroy all resources after evaluation:
-
-1. **Destroy Terraform Infrastructure**
-   ```bash
-   cd terraform/environments/prod
-   terraform destroy
-   ```
-
-2. **Delete DNS Records**
-   - Remove all DNS records from FreeDNS
-   - Delete ACM certificates (if not auto-deleted)
-
-3. **Clean Up GitHub**
-   - Delete GitHub repository (optional)
-   - Remove GitHub Actions secrets
-
-4. **Verify Cleanup**
-   - Check AWS Console for any remaining resources
-   - Verify no charges in AWS Cost Explorer
+| Resource | Value |
+|----------|-------|
+| AWS Region | ap-south-1 (Mumbai) |
+| VPC CIDR | 10.0.0.0/16 |
+| ECS Cluster | cloudzenia-hands-on-prod-cluster |
+| ECR Repository | cloudzenia-hands-on-prod-microservice |
+| RDS Instance | db.t3.micro (MySQL 8.0) |
+| EC2 Instance | t3.micro (Amazon Linux 2023) |
 
 ---
 
-## Repository Structure
+## 🔗 Repository
 
-```
-AWS/
-├── terraform/
-│   ├── modules/          # Reusable Terraform modules
-│   │   ├── network/
-│   │   ├── ecs-cluster/
-│   │   ├── ecs-service/
-│   │   ├── rds/
-│   │   ├── alb/
-│   │   ├── ec2-stack/
-│   │   ├── secrets/
-│   │   ├── iam/
-│   │   └── cloudwatch/
-│   └── environments/
-│       └── prod/         # Production environment
-├── services/
-│   └── microservice/    # Node.js microservice code
-├── .github/
-│   └── workflows/       # GitHub Actions workflow
-└── SUBMISSION_DOCUMENT.md  # This document
-```
+**GitHub**: https://github.com/pankaj779/cloudzenia-aws-assignment
 
 ---
 
-## Additional Notes
-
-- All infrastructure uses free-tier eligible resources where possible
-- Region: `ap-south-1` (Mumbai)
-- Terraform state can be stored in S3 backend (configure in `backend.tf`)
-- Secrets Manager credentials do NOT auto-rotate (as per requirements)
-- Security groups follow least privilege principle
-- All HTTP traffic redirects to HTTPS
-- CloudWatch agent configured for RAM metrics and NGINX logs
-
----
-
-**Document Version**: 1.0  
-**Last Updated**: [Date]  
-**Author**: [Your Name]
-
+**Submitted by**: Pankaj  
+**Date**: December 2025
